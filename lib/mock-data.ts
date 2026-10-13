@@ -1,0 +1,5 @@
+export const agents=[{name:"Operations Agent",type:"Business Operations",status:"Active",model:"Demo Agent",tasks:12},{name:"Support Agent",type:"Customer Support",status:"Draft",model:"Demo Agent",tasks:7},{name:"Translation Agent",type:"Translation Pack",status:"Active",model:"Demo Agent",tasks:18}];
+export const tasks=[{id:"system-health-check",name:"System Health Check",category:"System",approval:"None",status:"Active"},{id:"customer-intake",name:"Customer Intake",category:"Operations",approval:"None",status:"Active"},{id:"translator-matching",name:"Translator Matching",category:"Translation",approval:"Manager",status:"Active"},{id:"invoice-review",name:"Invoice Review",category:"Finance",approval:"Human",status:"Draft"}];
+export const skills=["system-diagnostics","customer-intake","document-analysis","translator-matching"];
+export const tools=["database.health","storage.health","email.send","documents.extract","crm.search"];
+export const executions=["EXE-1042","EXE-1041","EXE-1040","EXE-1039"];

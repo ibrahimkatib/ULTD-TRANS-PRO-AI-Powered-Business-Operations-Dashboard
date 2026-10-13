@@ -1,0 +1,333 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  OPERATOR
+  VIEWER
+}
+enum AgentStatus {
+  ACTIVE
+  PAUSED
+  DISABLED
+}
+enum TaskStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+enum ExecutionStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  WAITING_APPROVAL
+}
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+enum ContactType {
+  LEAD
+  CUSTOMER
+  PARTNER
+  EMPLOYEE
+  CANDIDATE
+}
+enum ContactStatus {
+  ACTIVE
+  INACTIVE
+}
+enum DealStage {
+  LEAD
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+enum ActivityType {
+  CALL
+  MEETING
+  EMAIL
+  NOTE
+  TASK
+  FOLLOW_UP
+}
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  RUNNING
+  COMPLETED
+  PAUSED
+}
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+enum InsightType {
+  OPPORTUNITY
+  RISK
+  TREND
+  RECOMMENDATION
+  ALERT
+}
+
+model User {
+  id             String       @id @default(cuid())
+  email          String       @unique
+  name           String
+  role           UserRole     @default(VIEWER)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Organization {
+  id          String      @id @default(cuid())
+  name        String
+  slug        String      @unique
+  users       User[]
+  workspaces  Workspace[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Workspace {
+  id              String         @id @default(cuid())
+  organizationId  String
+  name            String
+  slug            String
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agents          Agent[]
+  tasks           Task[]
+  executions      Execution[]
+  approvals       Approval[]
+  auditEvents     AuditEvent[]
+  companies       Company[]
+  contacts        Contact[]
+  deals           Deal[]
+  invoices        Invoice[]
+  activities      Activity[]
+  campaigns       Campaign[]
+  insights        Insight[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  @@unique([organizationId, slug])
+}
+
+model Agent {
+  id            String       @id @default(cuid())
+  workspaceId   String
+  name          String
+  slug          String
+  description   String?
+  status        AgentStatus  @default(ACTIVE)
+  model         String?
+  workspace     Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tasks         Task[]
+  executions    Execution[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  @@unique([workspaceId, slug])
+}
+
+model Task {
+  id            String       @id @default(cuid())
+  workspaceId   String
+  agentId       String?
+  name          String
+  slug          String
+  description   String?
+  definitionMd  String
+  status        TaskStatus   @default(ACTIVE)
+  priority      Priority     @default(MEDIUM)
+  approvalRequired Boolean   @default(false)
+  workspace     Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  agent         Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  executions    Execution[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  @@unique([workspaceId, slug])
+}
+
+model Execution {
+  id            String           @id @default(cuid())
+  workspaceId   String
+  agentId       String?
+  taskId        String?
+  status        ExecutionStatus  @default(QUEUED)
+  inputJson     Json?
+  outputJson    Json?
+  errorMessage  String?
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  workspace     Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  agent         Agent?          @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  task          Task?           @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  createdAt     DateTime         @default(now())
+}
+
+model Approval {
+  id            String         @id @default(cuid())
+  workspaceId   String
+  executionId   String?
+  status        ApprovalStatus @default(PENDING)
+  reason        String
+  requestedAt   DateTime       @default(now())
+  resolvedAt    DateTime?
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model AuditEvent {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  action       String
+  actorType    String
+  actorId      String?
+  metadataJson Json?
+  createdAt    DateTime  @default(now())
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model Company {
+  id          String    @id @default(cuid())
+  workspaceId String
+  name        String
+  industry    String?
+  ownerName   String?
+  email       String?
+  phone       String?
+  status      ContactStatus @default(ACTIVE)
+  value       Float      @default(0)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contacts    Contact[]
+  deals       Deal[]
+  invoices    Invoice[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Contact {
+  id          String         @id @default(cuid())
+  workspaceId String
+  companyId   String?
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  title       String?
+  type        ContactType    @default(LEAD)
+  status      ContactStatus  @default(ACTIVE)
+  score       Int            @default(0)
+  tagsJson    Json?
+  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company     Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  deals       Deal[]
+  activities  Activity[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Deal {
+  id          String      @id @default(cuid())
+  workspaceId String
+  companyId   String?
+  contactId   String?
+  name        String
+  value       Float
+  stage       DealStage   @default(LEAD)
+  probability Int         @default(20)
+  ownerName   String?
+  expectedClose DateTime?
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company     Company?   @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  contact     Contact?   @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  invoices    Invoice[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Invoice {
+  id          String        @id @default(cuid())
+  workspaceId String
+  companyId   String?
+  dealId      String?
+  number      String        @unique
+  amount      Float
+  currency    String        @default("EUR")
+  status      InvoiceStatus @default(DRAFT)
+  dueDate     DateTime
+  paidAt      DateTime?
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company     Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  deal        Deal?        @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Activity {
+  id          String       @id @default(cuid())
+  workspaceId String
+  contactId   String?
+  type        ActivityType
+  title       String
+  summary     String?
+  ownerName   String?
+  priority    Priority     @default(MEDIUM)
+  dueAt       DateTime?
+  completedAt DateTime?
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contact     Contact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  createdAt   DateTime     @default(now())
+}
+
+model Campaign {
+  id          String         @id @default(cuid())
+  workspaceId String
+  name        String
+  channel     String
+  status      CampaignStatus @default(DRAFT)
+  audience    String?
+  sentCount   Int            @default(0)
+  openCount   Int            @default(0)
+  clickCount  Int            @default(0)
+  revenue     Float          @default(0)
+  scheduledAt DateTime?
+  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Insight {
+  id          String      @id @default(cuid())
+  workspaceId String
+  type        InsightType
+  title       String
+  message     String
+  severity    Priority    @default(MEDIUM)
+  source      String?
+  resolved    Boolean     @default(false)
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+}

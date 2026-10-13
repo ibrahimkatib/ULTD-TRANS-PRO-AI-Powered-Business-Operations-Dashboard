@@ -1,0 +1,9 @@
+{
+  "platform": "ULTD TRANS PRO",
+  "mode": "live-ready",
+  "defaultWorkspace": "command-center",
+  "approval": {"enabled": true},
+  "audit": {"enabled": true},
+  "provider": {"type": "openai"},
+  "tools": ["customer_search", "request_send_email_approval"]
+}

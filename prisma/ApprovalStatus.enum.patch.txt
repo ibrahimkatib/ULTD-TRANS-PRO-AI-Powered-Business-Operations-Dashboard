@@ -1,0 +1,15 @@
+In prisma/schema.prisma, update the existing enum ApprovalStatus to:
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  SENDING
+  SENT
+  SEND_FAILED
+}
+
+Then run:
+  npx.cmd prisma migrate dev --name email_approval_delivery
+  npx.cmd prisma generate

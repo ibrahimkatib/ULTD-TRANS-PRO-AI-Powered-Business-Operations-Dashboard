@@ -1,0 +1,1 @@
+import {NextResponse} from "next/server"; export async function GET(){return NextResponse.json({status:"healthy",mode:process.env.AGENT_MODE||"simulation",platform:"ULTD TRANS PRO",timestamp:new Date().toISOString()})}
